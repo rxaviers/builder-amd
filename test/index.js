@@ -111,7 +111,7 @@ describe( "Concurrent runs", function() {
 		});
 	});
 
-	it( "must be enqueued", function() {
+	it( "should work just fine", function() {
 		expect( barJs ).to.equal( "define(\"bar\",[],function(){}),define(\"output\",function(){});" );
 		expect( fooJs ).to.equal( "define(\"bar\",[],function(){}),define([\"./bar\"]),define(\"output\",function(){});" );
 	});

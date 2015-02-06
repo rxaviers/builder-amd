@@ -1,47 +1,15 @@
-var mutex, queue,
-	requirejs = require( "requirejs-memfiles" ),
+var requirejs = require( "requirejs-memfiles" ),
 	util = require( "util" );
 
-queue = [];
-
-function enqueueBuildJs() {
-	queue.push( arguments );
-	if ( queue.length === 1 ) {
-		dequeueBuildJs();
-	}
-}
-
-function dequeueBuildJs() {
-	var callback;
-	var args = queue[ 0 ];
-	if ( args !== undefined ) {
-		callback = args[ 2 ];
-		args[ 2 ] = function() {
-			callback.apply( {}, arguments );
-			queue.shift();
-			dequeueBuildJs();
-		};
-		buildJs.apply( {}, args );
-	}
-}
-
 function buildJs( files, config, callback ) {
-	var localCallback, include;
+	var include;
 
-	if ( mutex ) {
-		return callback( new Error( "Concurrent calls not supported" ) );
-	}
 	if ( typeof config !== "object" ) {
 		return callback( new Error( "missing or invalid config (object expected)" ) );
 	}
 	if ( !Array.isArray( config.include ) ) {
 		return callback( new Error( "missing or invalid config.include (array expected)" ) );
 	}
-	mutex = true;
-	localCallback = function( error, css ) {
-		mutex = false;
-		callback( error, css, files );
-	};
 
 	include = config.include;
 	delete config.include;
@@ -58,10 +26,15 @@ function buildJs( files, config, callback ) {
 		}]
 	});
 
-	requirejs.setFiles( files );
-	requirejs.optimize( config, function() {
-		localCallback( null, files[ "dist/output.js" ] );
-	}, localCallback );
+	requirejs.setFiles( files, function( done ) {
+		requirejs.optimize( config, function() {
+			callback( null, files[ "dist/output.js" ], files );
+			done();
+		}, function( error ) {
+			callback( error );
+			done();
+		});
+	});
 }
 
 /**
@@ -75,5 +48,5 @@ module.exports = function( files, config, callback ) {
 		clonedFiles[ path ] = files[ path ];
 	});
 
-	enqueueBuildJs( clonedFiles, config, callback );
+	buildJs( clonedFiles, config, callback );
 };
