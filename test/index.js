@@ -118,3 +118,27 @@ describe( "Concurrent runs", function() {
 
 });
 
+describe( "onBuildWrite property", function() {
+	var js;
+
+	before(function( done ) {
+		amdBuilder( files, {
+			include: [ "foo" ],
+			optimize: "none",
+			onBuildWrite: function( id, path, contents ) {
+				return "/* banner for " + id + " */\n" + contents;
+			}
+		}, function( error, result ) {
+			if ( error ) {
+				return done( error );
+			}
+			js = result;
+			done();
+		});
+	});
+
+	it( "should work just fine", function() {
+		expect( js ).to.equal( "/* banner for bar */\ndefine('bar',[],function() {});\n\n/* banner for foo */\ndefine([ \"./bar\" ]);\n\n\ndefine(\"output\", function(){});\n" );
+	});
+});
+
