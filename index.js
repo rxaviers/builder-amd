@@ -2,7 +2,7 @@ var requirejs = require( "requirejs-memfiles" ),
 	util = require( "util" );
 
 function buildJs( files, config, callback ) {
-	var include;
+	var exclude, include;
 
 	if ( typeof config !== "object" ) {
 		return callback( new Error( "missing or invalid config (object expected)" ) );
@@ -11,7 +11,9 @@ function buildJs( files, config, callback ) {
 		return callback( new Error( "missing or invalid config.include (array expected)" ) );
 	}
 
+	exclude = config.exclude;
 	include = config.include;
+	delete config.exclude;
 	delete config.include;
 
 	config = util._extend( {}, config );
@@ -25,6 +27,10 @@ function buildJs( files, config, callback ) {
 			create: true
 		}]
 	});
+
+	if ( exclude ) {
+		config.modules[ 0 ].exclude = exclude;
+	}
 
 	requirejs.setFiles( files, function( done ) {
 		requirejs.optimize( config, function() {
